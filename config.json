@@ -2,5 +2,7 @@
   "seed": 0,
   "images_dir": "data/images",
   "results_dir": "results",
-  "pipelines": {}
+  "pipelines": {
+    "vika1": {"gamma": 0.6}
+  }
 }
