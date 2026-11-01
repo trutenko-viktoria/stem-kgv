@@ -3,6 +3,7 @@
   "images_dir": "data/images",
   "results_dir": "results",
   "pipelines": {
-    "vika1": {"gamma": 0.6}
+    "vika1": {"gamma": 0.6},
+    "vika2": {"scale": 2, "radius": 2, "saturation": 1.3}
   }
 }
