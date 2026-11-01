@@ -1,7 +1,14 @@
 """тести пайплайнів Віки."""
 import numpy as np
 
-from src.vika import equalize_histogram, gamma_correction, otsu_threshold
+from src.vika import (
+    change_saturation,
+    equalize_histogram,
+    gamma_correction,
+    kuwahara_filter,
+    otsu_threshold,
+    scale_nearest,
+)
 
 
 def test_gamma_correction():
@@ -24,3 +31,25 @@ def test_otsu_threshold():
     image = np.array([[0, 0, 0], [0, 204, 204], [204, 204, 255]]) # чотири 0, чотири 204, одне 255
     expected = [[0, 0, 0], [0, 255, 255], [255, 255, 255]] # найкращий поріг між 0 і 204
     assert np.array_equal(otsu_threshold(image, {}), expected)
+
+
+def test_scale_nearest():
+    """при збільшенні вдвічі кожен піксель стає квадратом 2 x 2."""
+    image = np.array([[[10, 10, 10], [20, 20, 20]]], dtype=np.uint8) # картинка 1 x 2
+    result = scale_nearest(image, {"scale": 2})
+    assert np.array_equal(result[:, :, 0], [[10, 10, 20, 20], [10, 10, 20, 20]]) # стала 2 x 4
+
+
+def test_kuwahara_filter():
+    """різка межа між 0 і 90 не розмивається."""
+    gray = np.array([[0, 0, 90, 90]] * 4, dtype=np.uint8) # ліва половина 0, права 90
+    image = np.stack([gray, gray, gray], axis=2)
+    result = kuwahara_filter(image, {"radius": 1})
+    assert np.array_equal(result[:, :, 0], gray) # кожен піксель має рівну область на своєму боці
+
+
+def test_change_saturation():
+    """подвоєння насиченості: s 0.5 стає 1, а сірий піксель не змінюється."""
+    image = np.array([[[200, 100, 100], [50, 50, 50]]], dtype=np.uint8) # v = 200 / 255, s = 0.5, і сірий
+    result = change_saturation(image, {"saturation": 2})
+    assert np.allclose(result, [[[200, 0, 0], [50, 50, 50]]]) # найменший канал став 0, сірий такий самий
