@@ -1,8 +1,9 @@
-"""пайплайни та алгоритми обробки зображень для Даші."""
+"""Пайплайни та алгоритми обробки зображень для Даші."""
 import numpy as np
 
 
 def gray_world_white_balance(image, params):
+    """Виправляє баланс білого за методом «сірого світу»."""
     img = image.astype(np.float64)
     means = img.reshape(-1, 3).mean(axis=0)
     gray = means.mean()
@@ -12,6 +13,7 @@ def gray_world_white_balance(image, params):
 
 
 def bilateral_filter(image, params):
+    """Застосовує двосторонній фільтр для згладжування зі збереженням країв."""
     radius = params.get("radius", params.get("window", 5) // 2)
     sigma_space = params.get("sigma_space", 3.0)
     sigma_color = params.get("sigma_color", 30.0)
@@ -41,14 +43,21 @@ def bilateral_filter(image, params):
 
 
 def region_growing(image, params):
+    """Виконує сегментацію методом регіонального зростання (з автоцентром, якщо точки не задані)."""
     threshold = params.get("threshold", 20.0)
-    seeds = params.get("seeds", [])
 
     img = image.astype(np.float64)
     height, width = img.shape[:2]
+    
+    seeds = params.get("seeds", [])
+    if not seeds:
+        seeds = [(height // 2, width // 2)]
+
     labels = np.zeros((height, width), dtype=np.int64)
 
     for seed_y, seed_x in seeds:
+        if not (0 <= seed_y < height and 0 <= seed_x < width):
+            continue
         if labels[seed_y, seed_x] != 0:
             continue
         region_sum = img[seed_y, seed_x].copy()
@@ -77,6 +86,7 @@ def region_growing(image, params):
 
 
 def rgb_to_ycbcr(image, params):
+    """Конвертує зображення з простору RGB у YCbCr."""
     img = image.astype(np.float64)
     red, green, blue = img[:, :, 0], img[:, :, 1], img[:, :, 2]
     y = 0.299 * red + 0.587 * green + 0.114 * blue
@@ -86,24 +96,47 @@ def rgb_to_ycbcr(image, params):
 
 
 def linear_contrast_stretch(image, params):
+    """Виконує лінійне розтягування контрасту (працює з каналом яскравості Y для YCbCr)."""
     low_percent = params.get("low_percent", 2.0)
     high_percent = params.get("high_percent", 98.0)
 
     img = image.astype(np.float64)
-    gray = 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
+    
+    if img.ndim == 3 and img.shape[2] == 3:
+        if np.abs(np.mean(img[:, :, 1]) - 128) < 30 and np.abs(np.mean(img[:, :, 2]) - 128) < 30:
+            gray = img[:, :, 0]
+        else:
+            gray = 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
+    elif img.ndim == 3:
+        gray = img[:, :, 0]
+    else:
+        gray = img
+
     low = np.percentile(gray, low_percent)
     high = np.percentile(gray, high_percent)
     if high <= low:
         return image.copy()
-    stretched = (img - low) / (high - low) * 255
+    
+    stretched = (gray - low) / (high - low) * 255
     return np.clip(np.round(stretched), 0, 255).astype(np.uint8)
 
 
 def lbp(image, params):
+    """Обчислює дескриптори Local Binary Patterns (LBP) за каналом яскравості."""
     radius = params.get("radius", params.get("window", 3) // 2)
 
     img = image.astype(np.float64)
-    gray = 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
+    
+    if img.ndim == 3 and img.shape[2] == 3:
+        if np.abs(np.mean(img[:, :, 1]) - 128) < 30 and np.abs(np.mean(img[:, :, 2]) - 128) < 30:
+            gray = img[:, :, 0]
+        else:
+            gray = 0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]
+    elif img.ndim == 3:
+        gray = img[:, :, 0]
+    else:
+        gray = img
+
     height, width = gray.shape
     padded = np.pad(gray, radius, mode="edge")
     rows, cols = np.indices((height, width))
