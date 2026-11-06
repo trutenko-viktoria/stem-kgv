@@ -98,7 +98,7 @@ def ssim(original, processed, max_value=255.0):
     return float(np.clip(result, -1.0, 1.0))
 
 
-CSV_FIELDS = ["pipeline", "step", "mse", "psnr", "ssim"]
+CSV_FIELDS = ["image", "pipeline", "step", "mse", "psnr", "ssim"]
 
 
 def write_metrics_csv(path, rows):
@@ -113,7 +113,7 @@ def write_metrics_csv(path, rows):
             writer.writerow({k: row.get(k, "") for k in CSV_FIELDS})
 
 
-def evaluate_pipeline(original, pipeline_steps, pipeline_name="pipeline"):
+def evaluate_pipeline(original, pipeline_steps, pipeline_name="pipeline", image_name=""):
     """проганяє кроки пайплайну і повертає метрики після кожного кроку.
 
     pipeline_steps: список (ім'я_кроку, функція) або (ім'я_кроку, функція, params).
@@ -128,6 +128,7 @@ def evaluate_pipeline(original, pipeline_steps, pipeline_name="pipeline"):
             params = {}
         current = func(current, params)
         rows.append({
+            "image": image_name,
             "pipeline": pipeline_name,
             "step": name,
             "mse": mse(original, current),
@@ -135,8 +136,6 @@ def evaluate_pipeline(original, pipeline_steps, pipeline_name="pipeline"):
             "ssim": ssim(original, current),
         })
     return rows, current
-
-
 
 
 def add_gaussian_noise(image, params):
