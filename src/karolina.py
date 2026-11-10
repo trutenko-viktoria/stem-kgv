@@ -85,6 +85,73 @@ def region_statistics(image, params):
     return image # повертаємо картинку без змін, щоб пайплайн міг її зберегти
 
 
+def log_transform(image, params):
+    """логарифмічне перетворення для покращення контрасту в темних областях."""
+    if not check_valid_image(image):
+        return np.zeros((256, 256, 3), dtype=np.uint8)
+        
+    img_float = image.astype(np.float64)
+    c = 255.0 / np.log(1 + 255.0) # нормалізуюча константа
+    
+    log_img = c * np.log(1 + img_float) # застосовуємо логарифм
+    return np.clip(log_img, 0, 255).astype(np.uint8)
+
+
+def morphological_gradient(image, params):
+    """морфологічний градієнт: різниця між розширенням (dilation) та звуженням (erosion)."""
+    img = image.astype(np.float64)
+    if len(img.shape) == 3:
+        img = np.mean(img, axis=2) # переводимо в один канал для морфології
+        
+    padded = np.pad(img, pad_width=1, mode='edge') # додаємо рамку 1px
+    shifts = []
+    
+    for dy in [-1, 0, 1]:
+        for dx in [-1, 0, 1]:
+            shifts.append(padded[1+dy:padded.shape[0]-1+dy, 1+dx:padded.shape[1]-1+dx]) # робимо зсуви
+            
+    stacked = np.stack(shifts, axis=-1)
+    dilation = np.max(stacked, axis=-1) # знаходимо локальний максимум
+    erosion = np.min(stacked, axis=-1) # знаходимо локальний мінімум
+    
+    grad = dilation - erosion # градієнт це різниця
+    return grad.astype(np.uint8)
+
+
+def hough_lines(image, params):
+    """перетворення Хафа для пошуку прямих (векторизоване для швидкості)."""
+    img = image.astype(np.float64)
+    if len(img.shape) == 3:
+        img = np.mean(img, axis=2)
+        
+    threshold = params.get("hough_threshold", 50)
+    y_idxs, x_idxs = np.nonzero(img > threshold) # знаходимо координати країв
+    
+    thetas = np.deg2rad(np.arange(-90, 90)) # кути від -90 до 90
+    diag_len = int(np.ceil(np.sqrt(img.shape[0]**2 + img.shape[1]**2)))
+    
+    accumulator = np.zeros((2 * diag_len, len(thetas)), dtype=np.uint64) # простір Хафа
+    
+    if len(x_idxs) > 0:
+        cos_t = np.cos(thetas)
+        sin_t = np.sin(thetas)
+        
+        rho_vals = np.outer(x_idxs, cos_t) + np.outer(y_idxs, sin_t) # рахуємо rho для всіх точок матричним множенням
+        rho_idxs = np.round(rho_vals).astype(int) + diag_len
+        theta_idxs = np.tile(np.arange(len(thetas)), (len(x_idxs), 1))
+        
+        np.add.at(accumulator, (rho_idxs.flatten(), theta_idxs.flatten()), 1) # голосуємо в акумулятор
+    
+    acc_max = accumulator.max()
+    if acc_max > 0:
+        vis = (accumulator / acc_max) * 255 # розтягуємо яскравість для збереження картинки
+    else:
+        vis = accumulator
+        
+    return vis.astype(np.uint8)
+
+
 PIPELINES = {
-    "karolina1": [("rotate", rotate_image), ("kmeans", kmeans_segmentation), ("stats", region_statistics)]
+    "karolina1": [("rotate", rotate_image), ("kmeans", kmeans_segmentation), ("stats", region_statistics)],
+    "karolina2": [("log", log_transform), ("morph_grad", morphological_gradient), ("hough", hough_lines)]
 }
