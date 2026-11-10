@@ -1,23 +1,20 @@
 """тести пайплайнів Кохан Кароліни"""
 import numpy as np
-
 from src.karolina import check_valid_image, hough_lines
-
 
 def test_valid_image_check():
     """перевірка захисту від пошкоджених файлів"""
     # Тест 1: Правильна картинка
     good_image = np.zeros((20, 20, 3), dtype=np.uint8)
-    assert check_valid_image(good_image) == True
+    assert check_valid_image(good_image) is True
     
     # Тест 2: Порожня картинка
     bad_image_empty = np.array([])
-    assert check_valid_image(bad_image_empty) == False
+    assert check_valid_image(bad_image_empty) is False
     
     # Тест 3: Замала картинка (менше 10x10)
     bad_image_small = np.zeros((5, 5, 3), dtype=np.uint8)
-    assert check_valid_image(bad_image_small) == False
-
+    assert check_valid_image(bad_image_small) is False
 
 def test_hough_lines():
     """перевірка алгоритму Хафа на базовій матриці"""
