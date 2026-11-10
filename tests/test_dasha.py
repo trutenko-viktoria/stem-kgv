@@ -67,7 +67,7 @@ def test_linear_contrast_stretch():
 
     result = linear_contrast_stretch(image, {"low_percent": 0.0, "high_percent": 100.0})
     expected = np.array([[0, 85, 170, 255, 85]], dtype=np.uint8)
-    assert np.array_equal(result[0, :, 0], expected[0])
+    assert np.array_equal(result, expected)
 
 
 def test_linear_contrast_stretch_constant_image():
