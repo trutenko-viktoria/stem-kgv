@@ -20,8 +20,8 @@ def test_gamma_correction():
 
 def test_equalize_histogram():
     """рівні 50, 100, 150 розтягуються на 0, 204, 255."""
-    gray = np.array([[50, 50, 50], [50, 100, 100], [100, 100, 150]]) # чотири 50, чотири 100, одне 150
-    image = np.stack([gray, gray, gray], axis=2).astype(np.uint8) # однакові r, g, b дають ту саму сіру
+    gray = np.array([[50, 50, 50], [50, 100, 100], [100, 100, 150]]) # 4 по 50, 4 по 100, одне 150
+    image = np.stack([gray, gray, gray], axis=2).astype(np.uint8) # r, g, b однакові
     expected = [[0, 0, 0], [0, 204, 204], [204, 204, 255]] # пораховано вручну за cdf
     assert np.array_equal(equalize_histogram(image, {}), expected)
 
@@ -50,6 +50,6 @@ def test_kuwahara_filter():
 
 def test_change_saturation():
     """подвоєння насиченості: s 0.5 стає 1, а сірий піксель не змінюється."""
-    image = np.array([[[200, 100, 100], [50, 50, 50]]], dtype=np.uint8) # v = 200 / 255, s = 0.5, і сірий
+    image = np.array([[[200, 100, 100], [50, 50, 50]]], dtype=np.uint8) # s = 0.5, і сірий піксель
     result = change_saturation(image, {"saturation": 2})
-    assert np.allclose(result, [[[200, 0, 0], [50, 50, 50]]]) # найменший канал став 0, сірий такий самий
+    assert np.allclose(result, [[[200, 0, 0], [50, 50, 50]]]) # мінімум став 0
