@@ -63,51 +63,73 @@ def bilateral_filter(image, params):
     return np.clip(np.round(result / total_weight[:, :, np.newaxis]), 0, 255).astype(np.uint8)
 
 
-def _grow_region(img, labels, seed_y, seed_x, threshold):
-    """Вирощує одну область від заданої насінини."""
-
+def _grow_region(img, labels, seed_y, seed_x, threshold, region_id):
+    """Вирощує область від насінини з використанням динамічного середнього значення
+    регіону для забезпечення плавніших та охайніших країв.
+    """
     height, width = img.shape[:2]
-    if not (0 <= seed_y < height and 0 <= seed_x < width):
-        return
-    if labels[seed_y, seed_x] != 0:
-        return
+    sum_color = img[seed_y, seed_x].astype(np.float64)
+    count = 1
 
-    region_sum = img[seed_y, seed_x].copy()
-    region_count = 1
-    mean_color = region_sum / region_count
     queue = [(seed_y, seed_x)]
-    labels[seed_y, seed_x] = 1
+    labels[seed_y, seed_x] = region_id
 
     while queue:
         y, x = queue.pop()
+        current_mean = sum_color / count
+
         for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
             if not (0 <= ny < height and 0 <= nx < width):
                 continue
             if labels[ny, nx] != 0:
                 continue
-            diff = img[ny, nx] - mean_color
+
+            neighbor_color = img[ny, nx]
+            diff = neighbor_color - current_mean
             if np.sqrt(np.sum(diff ** 2)) > threshold:
                 continue
-            labels[ny, nx] = 1
-            region_sum += img[ny, nx]
-            region_count += 1
-            mean_color = region_sum / region_count
+
+            labels[ny, nx] = region_id
             queue.append((ny, nx))
+            sum_color += neighbor_color
+            count += 1
 
 
 def region_growing(image, params):
-    """Сегментація методом регіонального зростання (з автоцентром, якщо точки не задані)."""
-    threshold = params.get("threshold", 20.0)
+    """Сегментація методом регіонального зростання з покращеним формуванням країв.
+
+    Використовує динамічне оновлення середнього кольору регіону для отримання
+    чітких, природних кольорових меж без різких артефактів.
+    """
+    threshold = params.get("threshold", 35.0)
+
     img = image.astype(np.float64)
     height, width = img.shape[:2]
 
-    seeds = params.get("seeds", []) or [(height // 2, width // 2)]
     labels = np.zeros((height, width), dtype=np.int64)
+    region_id = 0
 
-    for seed_y, seed_x in seeds:
-        _grow_region(img, labels, seed_y, seed_x, threshold)
+    explicit_seeds = params.get("seeds")
+    if explicit_seeds:
+        for seed_y, seed_x in explicit_seeds:
+            if 0 <= seed_y < height and 0 <= seed_x < width and labels[seed_y, seed_x] == 0:
+                region_id += 1
+                _grow_region(img, labels, seed_y, seed_x, threshold, region_id)
+    else:
+        for y in range(height):
+            for x in range(width):
+                if labels[y, x] != 0:
+                    continue
+                region_id += 1
+                _grow_region(img, labels, y, x, threshold, region_id)
 
-    return np.where(labels[:, :, np.newaxis] == 1, image, 0).astype(np.uint8)
+    result = np.zeros_like(img)
+    for rid in range(1, region_id + 1):
+        mask = labels == rid
+        if np.any(mask):
+            result[mask] = img[mask].mean(axis=0)
+
+    return np.clip(np.round(result), 0, 255).astype(np.uint8)
 
 
 def rgb_to_ycbcr(image, params=None):

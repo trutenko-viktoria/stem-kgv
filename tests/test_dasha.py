@@ -39,14 +39,18 @@ def test_bilateral_filter_preserves_edge():
 
 
 def test_region_growing():
-    """region growing виділяє область навколо seed-пікселя."""
-
+    """region growing розбиває весь знімок на однорідні області."""
     gray = np.array([[10, 10, 200, 200]] * 3, dtype=np.uint8)
     image = np.stack([gray, gray, gray], axis=2)
 
-    result = region_growing(image, {"threshold": 50.0, "seeds": [(0, 0)]})
-    expected = np.zeros_like(image)
-    expected[:, :2] = image[:, :2]  
+    result = region_growing(image, {"threshold": 50.0})
+
+    # Жодного чорного пікселя — весь знімок покритий
+    assert not np.any(result == 0)
+
+    # Дві області (10 і 200) відновлені як однорідні блоки
+    expected = np.array([[10, 10, 200, 200]] * 3, dtype=np.uint8)
+    expected = np.stack([expected] * 3, axis=2)
     assert np.array_equal(result, expected)
 
 
