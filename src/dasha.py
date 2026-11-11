@@ -33,6 +33,7 @@ def _space_weights(radius, sigma_space):
 
 def _accumulate_bilateral(img, padded, space_weights, radius, sigma_color):
     """Накопичує зважену суму сусідів та сумарну вагу."""
+    # pylint: disable=too-many-locals
     height, width = img.shape[:2]
     rows, cols = np.indices((height, width))
     total_weight = np.zeros((height, width))
@@ -67,6 +68,7 @@ def _grow_region(img, labels, seed_y, seed_x, threshold, region_id):
     """Вирощує область від насінини з використанням динамічного середнього значення
     регіону для забезпечення плавніших та охайніших країв.
     """
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     height, width = img.shape[:2]
     sum_color = img[seed_y, seed_x].astype(np.float64)
     count = 1
@@ -101,6 +103,7 @@ def region_growing(image, params):
     Використовує динамічне оновлення середнього кольору регіону для отримання
     чітких, природних кольорових меж без різких артефактів.
     """
+    # pylint: disable=too-many-locals
     threshold = params.get("threshold", 35.0)
 
     img = image.astype(np.float64)
@@ -170,6 +173,7 @@ def _lbp_offsets(radius):
 
 def lbp(image, params):
     """Обчислює дескриптори Local Binary Patterns (LBP) за каналом яскравості."""
+    # pylint: disable=too-many-locals
     radius = params.get("radius", params.get("window", 3) // 2)
 
     gray = _to_gray(image.astype(np.float64))

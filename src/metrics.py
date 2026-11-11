@@ -8,7 +8,7 @@ def _to_gray_if_needed(img):
     """допоміжна функція: перетворює триканальне зображення у двовимірне, якщо це необхідно."""
     if img.ndim == 3 and img.shape[2] == 3:
         return np.mean(img, axis=2)
-    return img 
+    return img
 
 def mse(original, processed):
     """середньоквадратична помилка між двома зображеннями (0 = ідентичні)."""
@@ -40,6 +40,7 @@ def _gaussian_kernel(size=11, sigma=1.5):
 
 def ssim(original, processed, max_value=255.0):
     """індекс структурної подібності (1.0 = ідентичні, менше = гірше)."""
+    # pylint: disable=too-many-locals
     # Уніфікуємо розмірності та канали
     if original.shape != processed.shape:
         a = _to_gray_if_needed(original).astype(np.float64)
@@ -93,7 +94,7 @@ def ssim(original, processed, max_value=255.0):
     valid_mask = denominator != 0
     if not np.any(valid_mask):
         return 1.0
-        
+
     result = np.mean(numerator[valid_mask] / denominator[valid_mask])
     return float(np.clip(result, -1.0, 1.0))
 
