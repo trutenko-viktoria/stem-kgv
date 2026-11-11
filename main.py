@@ -16,11 +16,12 @@ PIPELINES.update(dasha.PIPELINES)
 PIPELINES.update(karolina.PIPELINES)
 
 
-def run_pipeline(name, image, params):
+def run_pipeline(name, image, params, out_dir):
     """проганяє картинку через усі кроки пайплайну і повертає результат кожного кроку."""
+    stage_params = {**params, "out_dir": out_dir} # крок може зберегти свої файли в папку знімка
     results = []
     for stage_name, stage in PIPELINES[name]: # кроки йдуть по черзі
-        image = stage(image, params) # результат кроку йде на вхід наступному
+        image = stage(image, stage_params) # результат кроку йде на вхід наступному
         results.append((stage_name, image))
     return results
 
@@ -74,7 +75,7 @@ def main():
 
         # зберігаємо оригінал і картинку після кожного кроку
         save_image(os.path.join(out_dir, "0_original.png"), image)
-        steps = run_pipeline(args.pipeline, image, params)
+        steps = run_pipeline(args.pipeline, image, params, out_dir)
         for number, (stage_name, result) in enumerate(steps, start=1):
             save_image(os.path.join(out_dir, f"{number}_{stage_name}.png"), result) # 1_gamma.png, 2_...
 
