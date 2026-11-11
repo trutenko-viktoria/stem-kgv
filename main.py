@@ -86,9 +86,9 @@ def main():
                 "image": name,
                 "pipeline": args.pipeline,
                 "step": stage_name,
-                "mse": mse(reference, result),
-                "psnr": psnr(reference, result),
-                "ssim": ssim(reference, result),
+                "mse": round(mse(reference, result), 2), # округлюємо тільки для запису у файл
+                "psnr": round(psnr(reference, result), 2),
+                "ssim": round(ssim(reference, result), 4), # ssim від 0 до 1, тому більше знаків
             })
         print(f"{name}: готово")
 
