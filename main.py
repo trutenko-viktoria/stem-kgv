@@ -39,6 +39,7 @@ def match_size(original, result):
 
 def main():
     """читає аргументи й конфіг, обробляє всі знімки і зберігає результати."""
+    # pylint: disable=too-many-locals
     # аргументи з командного рядка
     parser = argparse.ArgumentParser(description="обробка супутникових знімків пайплайнами")
     parser.add_argument("--pipeline", help="назва пайплайну, наприклад vika1")
@@ -77,7 +78,7 @@ def main():
         save_image(os.path.join(out_dir, "0_original.png"), image)
         steps = run_pipeline(args.pipeline, image, params, out_dir)
         for number, (stage_name, result) in enumerate(steps, start=1):
-            save_image(os.path.join(out_dir, f"{number}_{stage_name}.png"), result) # 1_gamma.png, 2_...
+            save_image(os.path.join(out_dir, f"{number}_{stage_name}.png"), result) # 1_gamma.png
 
             # порівнюємо результат кроку з оригіналом
             result = np.clip(result, 0, 255) # так само, як при збереженні картинки

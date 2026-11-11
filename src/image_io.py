@@ -4,7 +4,7 @@ import os
 import numpy as np
 from skimage.io import imread, imsave
 
-IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff") # які файли вважаємо картинками
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff") # розширення картинок
 
 
 def list_images(folder):
